@@ -1,2 +1,46 @@
-# windfreak-python
-Python drivers for Windfreak Technologies devices.
+# windfreak-python [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/christian-hahn/windfreak-python/blob/master/LICENSE)
+
+## Abstract
+
+windfreak is a pure Python package to facilitate use of Windfreak Technologies devices from Python.
+
+windfreak is Python 3 compatible.
+
+## Supported devices
+* SynthHD
+* SynthHD PRO
+
+## Installation
+
+Using `pip`:
+```text
+sudo pip install windfreak
+```
+
+Using `setup.py`:
+```text
+git clone https://github.com/christian-hahn/windfreak-python.git
+cd windfreak-python
+sudo python setup.py install
+```
+
+## Example
+
+### SynthHD
+
+```python
+from windfreak import SynthHD
+
+synth = SynthHD('/dev/ttyACM0')
+synth.init()
+
+# Set channel 0 power and frequency
+synth[0].power = -10.
+synth[0].frequency = 2.e9
+
+# Enable channel 0
+synth[0].enable = True
+```
+
+## License
+windfreak-python is covered under the MIT licensed.
