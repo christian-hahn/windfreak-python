@@ -14,14 +14,14 @@ windfreak is Python 3 compatible.
 
 Using `pip`:
 ```text
-sudo pip install windfreak
+pip install windfreak
 ```
 
 Using `setup.py`:
 ```text
 git clone https://github.com/christian-hahn/windfreak-python.git
 cd windfreak-python
-sudo python setup.py install
+python setup.py install
 ```
 
 ## Example
