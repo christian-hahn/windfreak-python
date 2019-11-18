@@ -23,13 +23,20 @@ class SerialDevice:
 
     def write(self, attribute, *args):
         dtype, request, _ = self.API[attribute]
-        if dtype is bool:
-            args = (int(a) for a in args)
+        dtype = dtype if isinstance(dtype, tuple) else (dtype,)
+        if len(args) != len(dtype):
+            raise ValueError('Number of arguments and data-types are not equal.')
+        args = ((int(ar) if dt is bool else dt(ar)) for dt, ar in zip(dtype, args))
         self._write(request.format(*args))
 
     def read(self, attribute, *args):
         dtype, _, request = self.API[attribute]
+        dtype = dtype if isinstance(dtype, tuple) else (dtype,)
+        if len(args) + 1 != len(dtype):
+            raise ValueError('Must have +1 more data-type than argument.')
+        args = ((int(ar) if dt is bool else dt(ar)) for dt, ar in zip(dtype, args))
         ret = self._query(request.format(*args))
+        dtype = dtype[-1]
         if dtype is bool:
             ret = int(ret)
             if ret not in (0, 1):
