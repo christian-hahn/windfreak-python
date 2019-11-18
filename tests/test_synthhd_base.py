@@ -1,34 +1,23 @@
-"""Tests for SynthHD object.
+"""Base tests for SynthHD object.
 
-This module contains unit-tests for the SynthHD object.
+This module contains common unit-tests for the SynthHD object.
 """
 
-from windfreak import SynthHD
-import unittest
 from math import floor
+from time import sleep
 
 
-class SynthHDTestCase(unittest.TestCase):
+class SynthHDBaseTestCase:
 
+    DEVPATH = '/dev/ttyACM0'
     NOMINAL_FREQUENCY = 1.e9
     NOMINAL_POWER = -10.
-
-    def setUp(self):
-        self._dut = SynthHD('/dev/ttyACM0')
-        self._dut.init()
-
-    def tearDown(self):
-        self._dut.init()
-        self._dut.close()
-        del self._dut
 
     ## Device
 
     def test_model_type(self):
         model = self._dut.model_type
         self.assertIsInstance(model, str)
-        # FIXME: is serial number in model type?
-        # model type returns 'WFT SynthHD 450'
         self.assertIn('WFT SynthHD', model)
 
     def test_serial_number(self):
@@ -72,6 +61,7 @@ class SynthHDTestCase(unittest.TestCase):
         self.assertIsInstance(value, float)
 
     def test_reference_frequency(self):
+        self._dut.reference_mode = 'external'
         f_range = self._dut.reference_frequency_range
         self.assertIsInstance(f_range, dict)
         for key in ('start', 'stop', 'step'):
@@ -89,7 +79,7 @@ class SynthHDTestCase(unittest.TestCase):
             error = abs(freq - read)
             print('Set reference frequency to {} Hz (error = {})'
                   .format(freq, error))
-            self.assertLess(error, 1.e-5)
+            self.assertLess(error, 0.1)
             freq = floor((freq + coarse_step - f_start) / f_step) * f_step + f_start
 
     ## Channel
@@ -132,7 +122,7 @@ class SynthHDTestCase(unittest.TestCase):
             start = max(p_range['start'], -40.)
             stop = p_range['stop']
             step = p_range['step']
-            coarse_step = (stop - start) / 33
+            coarse_step = (stop - start) / 17
             power = start
             while power <= stop:
                 before = [ch.frequency for ch in others]
@@ -151,6 +141,7 @@ class SynthHDTestCase(unittest.TestCase):
         for channel in self._dut:
             channel.frequency = self.NOMINAL_FREQUENCY
             channel.power = self.NOMINAL_POWER
+            channel.enable = True
             value = channel.calibrated
             self.assertIsInstance(value, bool)
             self.assertTrue(value)
@@ -253,6 +244,7 @@ class SynthHDTestCase(unittest.TestCase):
             channel.frequency = self.NOMINAL_FREQUENCY
             channel.power = self.NOMINAL_POWER
             channel.enable = True
+            sleep(1.)
             value = channel.lock_status
             self.assertIsInstance(value, bool)
             self.assertTrue(value)
@@ -270,7 +262,3 @@ class SynthHDTestCase(unittest.TestCase):
                 self.assertIsInstance(read, bool)
                 self.assertEqual(before, after)
                 self.assertEqual(value, read)
-
-
-if __name__ == '__main__':
-    unittest.main()
