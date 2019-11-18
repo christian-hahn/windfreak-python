@@ -7,12 +7,33 @@ class SynthHDChannel:
     def __init__(self, parent, index):
         self._parent = parent
         self._index = index
+        model = self._parent.model
+        if model == 'SynthHD v1.4':
+            self._f_range = {'start': 53.e6, 'stop': 13999.999999e6, 'step': 0.1}
+            self._p_range = {'start': -80., 'stop': 20., 'step': 0.01}
+            self._vga_range = {'start': 0, 'stop': 45000, 'step': 1}
+        elif model == 'SynthHD v2':
+            self._f_range = {'start': 10.e6, 'stop': 15000.e6, 'step': 0.1}
+            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
+            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
+        elif model == 'SynthHD PRO v2':
+            self._f_range = {'start': 10.e6, 'stop': 24000.e6, 'step': 0.1}
+            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
+            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
+        else:
+            self._f_range = None
+            self._p_range = None
+            self._vga_range = None
 
     def init(self):
         """Initialize device."""
         self.enable = False
-        self.frequency = self.frequency_range['start']
-        self.power = self.power_range['start']
+        f_range = self.frequency_range
+        if f_range is not None:
+            self.frequency = f_range['start']
+        p_range = self.power_range
+        if p_range is not None:
+            self.power = p_range['start']
         self.phase = 0.
         self.temp_compensation_mode = '10 sec'
 
@@ -33,13 +54,9 @@ class SynthHDChannel:
         """Frequency range in Hz.
 
         Returns:
-            dict: frequency range
+            dict: frequency range or None
         """
-        return {
-            'start': 53.e6,
-            'stop': 13999.999999e6,
-            'step': 0.1,
-        }
+        return None if self._f_range is None else self._f_range.copy()
 
     @property
     def frequency(self):
@@ -57,8 +74,10 @@ class SynthHDChannel:
         Args:
             value (float / int): frequency in Hz
         """
+        if not isinstance(value, (float, int)):
+            raise ValueError('Expected float or int.')
         f_range = self.frequency_range
-        if not isinstance(value, (float, int)) or not f_range['start'] <= value <= f_range['stop']:
+        if f_range is not None and not f_range['start'] <= value <= f_range['stop']:
             raise ValueError('Expected float in range [{}, {}] Hz.'.format(
                              f_range['start'], f_range['stop']))
         self.write('frequency', value / 1e6)
@@ -68,13 +87,9 @@ class SynthHDChannel:
         """Power range in dBm.
 
         Returns:
-            dict: power range
+            dict: power range or None
         """
-        return {
-            'start': -60.,
-            'stop': 20.,
-            'step': 0.001,
-        }
+        return None if self._p_range is None else self._p_range.copy()
 
     @property
     def power(self):
@@ -135,13 +150,9 @@ class SynthHDChannel:
         """VGA DAC value range.
 
         Returns:
-            dict: range
+            dict: VGA DAC range or None
         """
-        return {
-            'start': 0,
-            'stop': 45000,
-            'step': 1,
-        }
+        return None if self._vga_range is None else self._vga_range.copy()
 
     @property
     def vga_dac(self):
@@ -278,7 +289,7 @@ class SynthHD(SerialDevice, Sequence):
     API = {
         # name              type    write      read
         'channel':          (int,   'C{}',     'C?'),  # Select channel
-        'frequency':        (float, 'f{:.7f}', 'f?'),  # Frequency in MHz
+        'frequency':        (float, 'f{:.8f}', 'f?'),  # Frequency in MHz
         'power':            (float, 'W{:.3f}', 'W?'),  # Power in dBm
         'calibrated':       (bool,  None,      'V'),
         'temp_comp_mode':   (int,   'Z{}',     'Z?'),
@@ -287,41 +298,41 @@ class SynthHD(SerialDevice, Sequence):
         'rf_mute':          (bool,  'h{}',     'h?'),
         'pa_power_on':      (bool,  'r{}',     'r?'),
         'pll_power_on':     (bool,  'E{}',     'E?'),
-
-        'model_type':       (str,   None,      '+'),
-        'serial_number':    (int,   None,      '-'),
-        'fw_version':       (str,   None,      'v0'),
-        'hw_version':       (str,   None,      'v1'),
-        'save':             (None,  'e',       None),
+        'model_type':       (str,   None,      '+'),   # Model type
+        'serial_number':    (int,   None,      '-'),   # Serial number
+        'fw_version':       (str,   None,      'v0'),  # Firmware version
+        'hw_version':       (str,   None,      'v1'),  # Hardware version
+        'sub_version':      (str,   None,      'v2'),  # Sub-version: "HD" or "HDPRO". Only Synth HD >= v2.
+        'save':             ((),    'e',       None),  # Program all settings to EEPROM
         'reference_mode':   (int,   'x{}',     'x?'),
         'trig_function':    (int,   'w{}',     'w?'),
         'pll_lock':         (bool,  None,      'p'),
-        'temperature':      (float, None,      'z'),  # Temperature in Celsius
-        'ref_frequency':    (float, '*{:.3f}', '*?'),  # Frequency in MHz
+        'temperature':      (float, None,      'z'),   # Temperature in Celsius
+        'ref_frequency':    (float, '*{:.8f}', '*?'),  # Reference frequency in MHz
 
-        'sweep_freq_low':   (int,   'l{}',     'l?'),
-        'sweep_freq_high':  (int,   'u{}',     'u?'),
-        'sweep_freq_step':  (int,   's{}',     's?'),
-        'sweep_time_step':  (int,   't{:.3f}', 't?'),  # Time step in [4, 10000] ms
-        'sweep_power_low':  (int,   '[{:.3f}', '[?'),  # Low power sweep [-60, +20] dBm
-        'sweep_power_high': (int,   ']{:.3f}', ']?'),  # High power sweep [-60, +20] dBm
-        'sweep_direction':  (int,   '^{}',     '^?'),
-        'sweep_diff_freq':  (int,   'k{}',     'k?'),  # Differential frequency in MHz
-        'sweep_diff_meth':  (int,   'n{}',     'n?'),  # Differential method
-        'sweep_type':       (int,   'X{}',     'X?'),
+        'sweep_freq_low':   (float, 'l{:.8f}', 'l?'),  # Sweep lower frequency in MHz
+        'sweep_freq_high':  (float, 'u{:.8f}', 'u?'),  # Sweep upper frequency in MHz
+        'sweep_freq_step':  (float, 's{:.8f}', 's?'),  # Sweep frequency step in MHz
+        'sweep_time_step':  (float, 't{:.3f}', 't?'),  # Sweep time step in [4, 10000] ms
+        'sweep_power_low':  (float, '[{:.3f}', '[?'),  # Sweep lower power [-60, +20] dBm
+        'sweep_power_high': (float, ']{:.3f}', ']?'),  # Sweep upper power [-60, +20] dBm
+        'sweep_direction':  (int,   '^{}',     '^?'),  # Sweep direction
+        'sweep_diff_freq':  (float, 'k{:.8f}', 'k?'),  # Sweep differential frequency in MHz
+        'sweep_diff_meth':  (int,   'n{}',     'n?'),  # Sweep differential method
+        'sweep_type':       (int,   'X{}',     'X?'),  # Sweep type {0: linear, 1: tabular}
         'sweep_single':     (bool,  'g{}',     'g?'),
         'sweep_cont':       (bool,  'c{}',     'c?'),
 
         'am_time_step':     (int,   'F{}',     'F?'),  # Time step in microseconds
         'am_num_samples':   (int,   'q{}',     'q?'),  # Number of samples in one burst
         'am_cont':          (bool,  'A{}',     'A?'),  # Enable continuous AM modulation
-        'am_lookup_table':  (int,   '@{}{}',   '@{}?'),  # Program row in lookup table in dBm
+        'am_lookup_table':  ((int, float), '@{}a{:.3f}', '@{}a?'),  # Program row in lookup table in dBm
 
         'pulse_on_time':    (int,   'P{}',     'P?'),  # Pulse on time in range [1, 10e6] us
         'pulse_off_time':   (int,   'O{}',     'O?'),  # Pulse off time in range [2, 10e6] uS
         'pulse_num_rep':    (int,   'R{}',     'R?'),  # Number of repetitions in range [1, 65500]
         'pulse_invert':     (bool,  ':{}',     ':?'),  # Invert pulse polarity
-        'pulse_single':     (None,  'G',       None),
+        'pulse_single':     ((),    'G',       None),
         'pulse_cont':       (bool,  'j{}',     'j?'),
         'dual_pulse_mod':   (bool,  'D{}',     'D?'),
 
@@ -334,6 +345,8 @@ class SynthHD(SerialDevice, Sequence):
 
     def __init__(self, devpath):
         super().__init__(devpath)
+        self._model = None
+        self._model = self.model
         self._channels = [SynthHDChannel(self, index) for index in range(2)]
 
     def __getitem__(self, key):
@@ -343,7 +356,7 @@ class SynthHD(SerialDevice, Sequence):
         return self._channels.__len__()
 
     def init(self):
-        """Initialize device."""
+        """Initialize device: put into a known, safe state."""
         self.reference_mode = 'internal 27mhz'
         self.trigger_mode = 'disabled'
         self.sweep_enable = False
@@ -353,6 +366,31 @@ class SynthHD(SerialDevice, Sequence):
         self.fm_enable = False
         for channel in self:
             channel.init()
+
+    @property
+    def model(self):
+        """Model version. This is the binned version that dictates API support.
+
+        Returns:
+            str: model version or None if unsupported
+        """
+        if self._model is not None:
+            return self._model
+        hw_ver = self.hardware_version
+        if 'Version 2.' in hw_ver:
+            sub_ver = self.read('sub_version')
+            if sub_ver == 'HD':
+                return 'SynthHD v2'
+            elif sub_ver == 'HDPRO':
+                return 'SynthHD PRO v2'
+            else:
+                # Unsupported sub-version. Return None.
+                return None
+        elif 'Version 1.4' in hw_ver:
+            return 'SynthHD v1.4'
+        else:
+            # Unsupported hardware version. Return None.
+            return None
 
     @property
     def model_type(self):
@@ -481,11 +519,7 @@ class SynthHD(SerialDevice, Sequence):
         Returns:
             dict: frequency range in Hz
         """
-        return {
-            'start': 10.e6,
-            'stop': 100.e6,
-            'step': 1.e3,
-        }
+        return {'start': 10.e6, 'stop': 100.e6, 'step': 1.e3}
 
     @property
     def reference_frequency(self):
@@ -503,8 +537,10 @@ class SynthHD(SerialDevice, Sequence):
         Args:
             value (float / int): frequency in Hz
         """
+        if not isinstance(value, (float, int)):
+            raise ValueError('Expected float or int.')
         f_range = self.reference_frequency_range
-        if not isinstance(value, (float, int)) or not f_range['start'] <= value <= f_range['stop']:
+        if not f_range['start'] <= value <= f_range['stop']:
             raise ValueError('Expected float in range [{}, {}] Hz.'.format(
                              f_range['start'], f_range['stop']))
         self.write('ref_frequency', value / 1.e6)
