@@ -7,8 +7,10 @@ windfreak is a pure Python package to facilitate use of Windfreak Technologies d
 windfreak is Python 3 compatible.
 
 ## Supported devices
-* SynthHD
-* SynthHD PRO
+* SynthHD v1.4
+* SynthHD PRO v1.4
+* SynthHD v2
+* SynthHD PRO v2
 
 ## Installation
 
