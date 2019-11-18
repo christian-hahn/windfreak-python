@@ -208,19 +208,19 @@ class SynthHDChannel:
         self.write('phase_step', value)
 
     @property
-    def rf_mute(self):
-        """RF output mute.
+    def rf_enable(self):
+        """RF output enable.
 
         Returns:
-            bool: mute
+            bool: enable
         """
-        return not self.read('rf_mute')
+        return self.read('rf_enable')
 
-    @rf_mute.setter
-    def rf_mute(self, value):
+    @rf_enable.setter
+    def rf_enable(self, value):
         if not isinstance(value, bool):
             raise ValueError('Expected bool.')
-        self.write('rf_mute', not value)
+        self.write('rf_enable', value)
 
     @property
     def pa_enable(self):
@@ -259,7 +259,7 @@ class SynthHDChannel:
         Returns:
             bool: enabled
         """
-        return not self.rf_mute and self.pll_enable and self.pa_enable
+        return self.rf_enable and self.pll_enable and self.pa_enable
 
     @enable.setter
     def enable(self, value):
@@ -270,7 +270,7 @@ class SynthHDChannel:
         """
         if not isinstance(value, bool):
             raise TypeError('Expected bool.')
-        self.rf_mute = not value
+        self.rf_enable = value
         self.pll_enable = value
         self.pa_enable = value
 
@@ -295,7 +295,7 @@ class SynthHD(SerialDevice, Sequence):
         'temp_comp_mode':   (int,   'Z{}',     'Z?'),
         'vga_dac':          (int,   'a{}',     'a?'),  # VGA DAC value [0, 45000]
         'phase_step':       (float, '~{:.3f}', '~?'),  # Phase step in degrees
-        'rf_mute':          (bool,  'h{}',     'h?'),
+        'rf_enable':        (bool,  'h{}',     'h?'),
         'pa_power_on':      (bool,  'r{}',     'r?'),
         'pll_power_on':     (bool,  'E{}',     'E?'),
         'model_type':       (str,   None,      '+'),   # Model type

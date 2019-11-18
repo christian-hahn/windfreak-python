@@ -227,8 +227,8 @@ class SynthHDBaseTestCase:
                 self.assertEqual(before, after)
                 self.assertEqual(value, read)
 
-    def test_rf_mute(self):
-        self.channel_enable_helper('rf_mute')
+    def test_rf_enable(self):
+        self.channel_enable_helper('rf_enable')
 
     def test_pa_enable(self):
         self.channel_enable_helper('pa_enable')
