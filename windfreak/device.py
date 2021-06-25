@@ -14,7 +14,7 @@ class SerialDevice:
     def open(self):
         if self._dev is not None:
             raise RuntimeError('Device has already been opened.')
-        self._dev = Serial(port=self._devpath, timeout=1)
+        self._dev = Serial(port=self._devpath, timeout=10)
 
     def close(self):
         if self._dev is not None:
@@ -57,7 +57,10 @@ class SerialDevice:
         Returns:
             str: data
         """
-        return self._dev.readline().decode('utf-8').strip()
+        rdata = self._dev.readline()
+        if not rdata.endswith(b'\n'):
+            raise TimeoutError('Expected newline terminator.')
+        return rdata.decode('utf-8').strip()
 
     def _query(self, data):
         """Write to device and read response.
