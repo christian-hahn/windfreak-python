@@ -52,7 +52,16 @@ class SynthHDChannel:
     def select(self):
         """Select channel."""
         self._parent.write('channel', self._index)
-        
+
+    @property
+    def channel_spacing_range(self):
+        """Channel Spacing Range in Hz.
+
+           Returns:
+               dict: channel spacing range or None
+        """
+        return None if self._cspacing_range is None else self._cspacing_range.copy()
+
     @property
     def channel_spacing(self):
         """Channel Spacing in Hz
@@ -71,12 +80,12 @@ class SynthHDChannel:
         """
         if not isinstance(value, (float, int)):
             raise ValueError('Expected float or int.')
-        cspacing_range = self.cspacing_range
-        if cspacing_range is not None and not cspacing_range['start'] <= value <= cspacing_range['stop']:
+        cs_range = self.channel_spacing_range
+        if cs_range is not None and not cs_range['start'] <= value <= cs_range['stop']:
             raise ValueError('Expected float in range [{}, {}] Hz.'.format(
-                             cspacing_range['start'], cspacing_range['stop']))
+                             cs_range['start'], cs_range['stop']))
         self.write('channelspacing', value)
-        
+
     @property
     def frequency_range(self):
         """Frequency range in Hz.
@@ -109,16 +118,7 @@ class SynthHDChannel:
             raise ValueError('Expected float in range [{}, {}] Hz.'.format(
                              f_range['start'], f_range['stop']))
         self.write('frequency', value / 1e6)
-        
-    @property
-    def cspacing_range(self):
-        """Channel Spacing Range in Hz.
 
-           Returns:
-               dict: channel spacing range or None
-        """
-        return None if self._cspacing_range is None else self._cspacing_range.copy()
-    
     @property
     def power_range(self):
         """Power range in dBm.
