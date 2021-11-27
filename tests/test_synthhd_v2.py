@@ -5,11 +5,11 @@ This module contains unit-tests for the SynthHD object specific to SynthHD v2.
 
 import sys
 import unittest
-from test_synthhd_base import SynthHDBaseTestCase
+from test_synthhd_base import SynthHDv2BaseTestCase
 from windfreak import SynthHD
 
 
-class SynthHDv2TestCase(unittest.TestCase, SynthHDBaseTestCase):
+class SynthHDv2TestCase(unittest.TestCase, SynthHDv2BaseTestCase):
 
     def setUp(self):
         self._dut = SynthHD(self.DEVPATH)

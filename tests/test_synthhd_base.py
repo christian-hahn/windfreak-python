@@ -262,3 +262,32 @@ class SynthHDBaseTestCase:
                 self.assertIsInstance(read, bool)
                 self.assertEqual(before, after)
                 self.assertEqual(value, read)
+
+
+class SynthHDv2BaseTestCase(SynthHDBaseTestCase):
+
+    def test_channel_spacing(self):
+        for index, channel in enumerate(self._dut):
+            others = [ch for ch in self._dut if not ch is channel]
+            cs_range = channel.channel_spacing_range
+            self.assertIsInstance(cs_range, dict)
+            for key in ('start', 'stop', 'step'):
+                self.assertIsInstance(cs_range[key], float)
+            self.assertLessEqual(cs_range['start'], cs_range['stop'])
+            f_start = cs_range['start']
+            f_stop = cs_range['stop']
+            f_step = cs_range['step']
+            coarse_step = (f_stop - f_start) / 13
+            freq = f_start
+            while freq <= f_stop:
+                before = [ch.channel_spacing for ch in others]
+                channel.channel_spacing = freq
+                read = channel.channel_spacing
+                after = [ch.channel_spacing for ch in others]
+                self.assertEqual(before, after)
+                self.assertIsInstance(read, float)
+                error = abs(freq - read)
+                print('Set channel {} channel spacing to {} Hz (error = {})'
+                      .format(index, freq, error))
+                self.assertLess(error, 1.e-10)
+                freq = floor((freq + coarse_step - f_start) / f_step) * f_step + f_start
