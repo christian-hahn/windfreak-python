@@ -12,22 +12,10 @@ class SynthHDChannel:
             self._f_range = {'start': 53.e6, 'stop': 13999.999999e6, 'step': 0.1}
             self._p_range = {'start': -80., 'stop': 20., 'step': 0.01}
             self._vga_range = {'start': 0, 'stop': 45000, 'step': 1}
-            self._cspacing_range = {'start': 0.1, 'stop': 1000, 'step': 0.1}
-        elif model == 'SynthHD v2':
-            self._f_range = {'start': 10.e6, 'stop': 15000.e6, 'step': 0.1}
-            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
-            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
-            self._cspacing_range = {'start': 0.1, 'stop': 1000, 'step': 0.1}
-        elif model == 'SynthHD PRO v2':
-            self._f_range = {'start': 10.e6, 'stop': 24000.e6, 'step': 0.1}
-            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
-            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
-            self._cspacing_range = {'start': 0.1, 'stop': 1000, 'step': 0.1}
         else:
             self._f_range = None
             self._p_range = None
             self._vga_range = None
-            self._cspacing_range = None
 
     def init(self):
         """Initialize device."""
@@ -52,39 +40,6 @@ class SynthHDChannel:
     def select(self):
         """Select channel."""
         self._parent.write('channel', self._index)
-
-    @property
-    def channel_spacing_range(self):
-        """Channel Spacing Range in Hz.
-
-           Returns:
-               dict: channel spacing range or None
-        """
-        return None if self._cspacing_range is None else self._cspacing_range.copy()
-
-    @property
-    def channel_spacing(self):
-        """Channel Spacing in Hz
-
-           Returns:
-               float: Channel Spacing setting in Hz
-        """
-        return self.read('channelspacing')
-
-    @channel_spacing.setter
-    def channel_spacing(self,value):
-        """Set Channel Spacing in Hz.
-
-           Args:
-               float: Channel spacing in Hz
-        """
-        if not isinstance(value, (float, int)):
-            raise ValueError('Expected float or int.')
-        cs_range = self.channel_spacing_range
-        if cs_range is not None and not cs_range['start'] <= value <= cs_range['stop']:
-            raise ValueError('Expected float in range [{}, {}] Hz.'.format(
-                             cs_range['start'], cs_range['stop']))
-        self.write('channelspacing', value)
 
     @property
     def frequency_range(self):
@@ -321,6 +276,62 @@ class SynthHDChannel:
         return self.read('pll_lock')
 
 
+class SynthHDv2Channel(SynthHDChannel):
+
+    def __init__(self, parent, index):
+        self._parent = parent
+        self._index = index
+        model = self._parent.model
+        if model == 'SynthHD v2':
+            self._f_range = {'start': 10.e6, 'stop': 15000.e6, 'step': 0.1}
+            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
+            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
+            self._cspacing_range = {'start': 0.1, 'stop': 1000., 'step': 0.1}
+        elif model == 'SynthHD PRO v2':
+            self._f_range = {'start': 10.e6, 'stop': 24000.e6, 'step': 0.1}
+            self._p_range = {'start': -70., 'stop': 20., 'step': 0.01}
+            self._vga_range = {'start': 0, 'stop': 4000, 'step': 1}
+            self._cspacing_range = {'start': 0.1, 'stop': 1000., 'step': 0.1}
+        else:
+            self._f_range = None
+            self._p_range = None
+            self._vga_range = None
+            self._cspacing_range = None
+
+    @property
+    def channel_spacing_range(self):
+        """Channel Spacing Range in Hz.
+
+           Returns:
+               dict: channel spacing range or None
+        """
+        return None if self._cspacing_range is None else self._cspacing_range.copy()
+
+    @property
+    def channel_spacing(self):
+        """Channel Spacing in Hz
+
+           Returns:
+               float: Channel Spacing setting in Hz
+        """
+        return self.read('channelspacing')
+
+    @channel_spacing.setter
+    def channel_spacing(self,value):
+        """Set Channel Spacing in Hz.
+
+           Args:
+               float: Channel spacing in Hz
+        """
+        if not isinstance(value, (float, int)):
+            raise ValueError('Expected float or int.')
+        cs_range = self.channel_spacing_range
+        if cs_range is not None and not cs_range['start'] <= value <= cs_range['stop']:
+            raise ValueError('Expected float in range [{}, {}] Hz.'.format(
+                             cs_range['start'], cs_range['stop']))
+        self.write('channelspacing', value)
+
+
 class SynthHD(SerialDevice, Sequence):
 
     API = {
@@ -385,7 +396,11 @@ class SynthHD(SerialDevice, Sequence):
         super().__init__(devpath)
         self._model = None
         self._model = self.model
-        self._channels = [SynthHDChannel(self, index) for index in range(2)]
+        if 'v2' in self.model:
+            channel_type = SynthHDv2Channel
+        else:
+            channel_type = SynthHDChannel
+        self._channels = [channel_type(self, index) for index in range(2)]
 
     def __getitem__(self, key):
         return self._channels.__getitem__(key)
