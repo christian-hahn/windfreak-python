@@ -2,11 +2,14 @@
 
 ## Abstract
 
-windfreak is a pure Python package to facilitate use of Windfreak Technologies devices from Python.
+**windfreak** is a pure Python package to facilitate the use of [Windfreak Technologies](https://windfreaktech.com) devices.
 
-windfreak is Python 3 compatible.
+**windfreak** requires Python 3.
+
+**windfreak** is MIT licensed.
 
 ## Supported devices
+
 * SynthHD v1.4
 * SynthHD PRO v1.4
 * SynthHD v2
