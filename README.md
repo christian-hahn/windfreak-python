@@ -17,16 +17,33 @@
 
 ## Installation
 
-Using `pip`:
+### Using `pip`:
 ```text
 pip install windfreak
 ```
 
-Using `setup.py`:
+### Using `setup.py`:
 ```text
 git clone https://github.com/christian-hahn/windfreak-python.git
 cd windfreak-python
 python setup.py install
+```
+
+### Using `conda`:
+Add `conda-forge` to your channels with
+```text
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+
+then install the package with `conda`:
+```text
+conda install windfreak
+```
+
+or with `mamba`:
+```text
+mamba install windfreak
 ```
 
 ## Example
