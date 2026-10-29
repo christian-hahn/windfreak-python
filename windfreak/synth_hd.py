@@ -133,7 +133,7 @@ class SynthHDChannel:
     @temp_compensation_mode.setter
     def temp_compensation_mode(self, value):
         modes = self.temp_compensation_modes
-        if not value in modes:
+        if value not in modes:
             raise ValueError('Expected str in set {}.'.format(modes))
         self.write('temp_comp_mode', modes.index(value))
 
@@ -395,12 +395,25 @@ class SynthHD(SerialDevice, Sequence):
     def __init__(self, devpath):
         super().__init__(devpath)
         self._model = None
-        self._model = self.model
-        if 'v2' in self.model:
-            channel_type = SynthHDv2Channel
-        else:
-            channel_type = SynthHDChannel
-        self._channels = [channel_type(self, index) for index in range(2)]
+        try:
+            try:
+                detected_model = self.model
+                self._model = detected_model
+            except Exception as exc:
+                raise RuntimeError('Failed to detect model') from exc
+        
+            if 'v2' in self.model:
+                channel_type = SynthHDv2Channel
+            else:
+                channel_type = SynthHDChannel
+            
+            self._channels = [channel_type(self, index) for index in range(2)]
+        except:
+            try:
+                self.close()
+            except Exception as cleanup_err:
+                exc.add_note(f'Windfreak cleanup also failed: {cleanup_err}')
+            raise
 
     def __getitem__(self, key):
         return self._channels.__getitem__(key)
@@ -441,6 +454,9 @@ class SynthHD(SerialDevice, Sequence):
                 return None
         elif 'Version 1.4' in hw_ver:
             return 'SynthHD v1.4'
+        elif 'Version 1.10' in hw_ver:
+            return 'SynthHD mini'
+
         else:
             # Unsupported hardware version. Return None.
             return None
@@ -511,7 +527,7 @@ class SynthHD(SerialDevice, Sequence):
             value (str): mode
         """
         modes = self.reference_modes
-        if not value in modes:
+        if value not in modes:
             raise ValueError('Expected str in set {}.'.format(modes))
         self.write('reference_mode', modes.index(value))
 
@@ -552,7 +568,7 @@ class SynthHD(SerialDevice, Sequence):
             value (str): mode
         """
         modes = self.trigger_modes
-        if not value in modes:
+        if value not in modes:
             raise ValueError('Expected str in set {}.'.format(modes))
         self.write('trig_function', modes.index(value))
 
